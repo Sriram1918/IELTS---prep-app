@@ -134,7 +134,7 @@ async def seed_database():
     from momentum_engine.database.connection import async_session_maker
     from momentum_engine.database.models import Track, Task, Competition
     from sqlalchemy import select, func
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, date
     import uuid
     
     try:
@@ -151,29 +151,32 @@ async def seed_database():
             tracks = [
                 Track(
                     id=str(uuid.uuid4()),
-                    track_type="beginner",
-                    name="IELTS Beginner Track",
-                    description="Perfect for first-time test takers. Build your foundation.",
-                    target_band=6.0,
+                    name="Beginner",
                     duration_weeks=8,
+                    daily_minutes=30,
+                    tasks_per_day=3,
+                    focus="Foundation building for first-time test takers",
+                    description="Perfect for first-time test takers. Build your foundation with essential skills.",
                     created_at=datetime.utcnow()
                 ),
                 Track(
                     id=str(uuid.uuid4()),
-                    track_type="intermediate",
-                    name="IELTS Intermediate Track",
-                    description="Strengthen your skills and aim for Band 6.5-7.0",
-                    target_band=7.0,
+                    name="Intermediate",
                     duration_weeks=6,
+                    daily_minutes=45,
+                    tasks_per_day=4,
+                    focus="Skill strengthening for Band 6.5-7.0",
+                    description="Strengthen your skills and aim for Band 6.5-7.0",
                     created_at=datetime.utcnow()
                 ),
                 Track(
                     id=str(uuid.uuid4()),
-                    track_type="advanced",
-                    name="IELTS Advanced Track",
-                    description="Master advanced techniques for Band 7.5+",
-                    target_band=8.0,
+                    name="Advanced",
                     duration_weeks=4,
+                    daily_minutes=60,
+                    tasks_per_day=5,
+                    focus="Master advanced techniques for Band 7.5+",
+                    description="Master advanced techniques for high scorers.",
                     created_at=datetime.utcnow()
                 ),
             ]
@@ -183,12 +186,10 @@ async def seed_database():
             
             # Create tasks for each track
             task_templates = [
-                {"skill": "reading", "title": "Academic Reading Practice", "duration_minutes": 60},
-                {"skill": "writing", "title": "Task 2 Essay Writing", "duration_minutes": 40},
-                {"skill": "listening", "title": "Section 1-4 Practice", "duration_minutes": 30},
-                {"skill": "speaking", "title": "Part 2 Cue Card Practice", "duration_minutes": 15},
-                {"skill": "vocabulary", "title": "Academic Word List", "duration_minutes": 20},
-                {"skill": "grammar", "title": "Error Correction Drill", "duration_minutes": 25},
+                {"type": "reading", "title": "Academic Reading Practice", "difficulty": "medium", "duration": 60},
+                {"type": "writing", "title": "Task 2 Essay Writing", "difficulty": "medium", "duration": 40},
+                {"type": "listening", "title": "Section 1-4 Practice", "difficulty": "easy", "duration": 30},
+                {"type": "speaking", "title": "Part 2 Cue Card Practice", "difficulty": "hard", "duration": 15},
             ]
             
             for track in tracks:
@@ -196,12 +197,12 @@ async def seed_database():
                     task = Task(
                         id=str(uuid.uuid4()),
                         track_id=track.id,
-                        skill=template["skill"],
+                        type=template["type"],
                         title=template["title"],
-                        description=f"Practice {template['skill']} skills with guided exercises",
-                        difficulty=track.track_type,
-                        estimated_minutes=template["duration_minutes"],
-                        order_index=i,
+                        description=f"Practice {template['type']} skills with guided exercises",
+                        difficulty=template["difficulty"],
+                        estimated_minutes=template["duration"],
+                        order_in_track=i + 1,
                         created_at=datetime.utcnow()
                     )
                     session.add(task)
@@ -209,11 +210,11 @@ async def seed_database():
             # Create demo competition
             competition = Competition(
                 id=str(uuid.uuid4()),
+                type="L-AIMS",
                 name="Weekly L-AIMS Challenge",
-                description="Compete with other learners in mock tests",
-                start_date=datetime.utcnow(),
-                end_date=datetime.utcnow() + timedelta(days=7),
-                is_active=True,
+                start_date=date.today(),
+                end_date=date.today() + timedelta(days=7),
+                status="active",
                 created_at=datetime.utcnow()
             )
             session.add(competition)
