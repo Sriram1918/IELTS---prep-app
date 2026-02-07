@@ -48,25 +48,40 @@ redis_client: redis.Redis = None
 
 
 async def init_db():
-    """Initialize database connections."""
+    """Initialize database connections and create tables."""
     global redis_pool, redis_client
     
-    # Initialize Redis
-    redis_pool = redis.ConnectionPool.from_url(
-        settings.redis_connection_url,
-        decode_responses=True,
-        socket_timeout=settings.redis_connection_timeout_ms / 1000,
-    )
-    redis_client = redis.Redis(connection_pool=redis_pool)
+    # Import all models to register them with Base
+    from momentum_engine.modules.navigator import models as nav_models
+    from momentum_engine.modules.gamification import models as game_models
+    from momentum_engine.modules.analytics import models as analytics_models
+    from momentum_engine.modules.laims import models as laims_models
+    from momentum_engine.modules.pods import models as pods_models
     
-    # Test Redis connection
+    # Create all tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database tables created/verified")
+    
+    # Initialize Redis (optional - gracefully handle if not available)
     try:
+        redis_pool = redis.ConnectionPool.from_url(
+            settings.redis_connection_url,
+            decode_responses=True,
+            socket_timeout=settings.redis_connection_timeout_ms / 1000,
+        )
+        redis_client = redis.Redis(connection_pool=redis_pool)
+        
+        # Test Redis connection
         await redis_client.ping()
         logger.info("Redis connection established")
-    except redis.ConnectionError as e:
-        logger.warning("Redis connection failed, will use PostgreSQL fallback", error=str(e))
+    except Exception as e:
+        logger.warning("Redis not available, running without cache", error=str(e))
+        redis_client = None
+        redis_pool = None
     
     logger.info("Database initialization complete")
+
 
 
 async def close_db():
