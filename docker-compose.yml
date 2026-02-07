@@ -1,0 +1,114 @@
+version: "3.9"
+
+services:
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: momentum-backend
+    ports:
+      - "8001:8000"
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./momentum_engine:/app/momentum_engine
+    command: uvicorn momentum_engine.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - momentum-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: momentum-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-momentum}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-momentum_password}
+      POSTGRES_DB: ${POSTGRES_DB:-momentum_engine}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-momentum}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - momentum-network
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: momentum-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - momentum-network
+
+  # Celery Worker (Background Jobs)
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: momentum-celery-worker
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./momentum_engine:/app/momentum_engine
+    command: celery -A momentum_engine.workers.celery_app worker --loglevel=info
+    networks:
+      - momentum-network
+
+  # Celery Beat (Scheduled Tasks)
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: momentum-celery-beat
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./momentum_engine:/app/momentum_engine
+    command: celery -A momentum_engine.workers.celery_app beat --loglevel=info
+    networks:
+      - momentum-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  momentum-network:
+    driver: bridge
