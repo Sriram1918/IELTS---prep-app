@@ -52,11 +52,7 @@ async def init_db():
     global redis_pool, redis_client
     
     # Import all models to register them with Base
-    from momentum_engine.modules.navigator import models as nav_models
-    from momentum_engine.modules.gamification import models as game_models
-    from momentum_engine.modules.analytics import models as analytics_models
-    from momentum_engine.modules.laims import models as laims_models
-    from momentum_engine.modules.pods import models as pods_models
+    from momentum_engine.database import models  # All models are defined here
     
     # Create all tables
     async with engine.begin() as conn:
