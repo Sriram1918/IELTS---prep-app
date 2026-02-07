@@ -129,100 +129,15 @@ async def root():
 
 
 @app.post("/api/seed", tags=["Admin"])
-async def seed_database():
-    """Seed database with demo data."""
-    from momentum_engine.database.connection import async_session_maker
-    from momentum_engine.database.models import Track, Task, Competition
-    from sqlalchemy import select, func
-    from datetime import datetime, timedelta, date
-    import uuid
-    
+async def seed_database(reset: bool = False):
+    """Seed database with FULL demo data (tracks, users, cohorts)."""
     try:
-        async with async_session_maker() as session:
-            # Check if already seeded
-            result = await session.execute(
-                select(func.count()).select_from(Track)
-            )
-            count = result.scalar()
-            if count and count > 0:
-                return {"message": "Database already seeded", "tracks": count}
-            
-            # Create demo tracks
-            tracks = [
-                Track(
-                    id=str(uuid.uuid4()),
-                    name="Beginner",
-                    duration_weeks=8,
-                    daily_minutes=30,
-                    tasks_per_day=3,
-                    focus="Foundation building for first-time test takers",
-                    description="Perfect for first-time test takers. Build your foundation with essential skills.",
-                    created_at=datetime.utcnow()
-                ),
-                Track(
-                    id=str(uuid.uuid4()),
-                    name="Intermediate",
-                    duration_weeks=6,
-                    daily_minutes=45,
-                    tasks_per_day=4,
-                    focus="Skill strengthening for Band 6.5-7.0",
-                    description="Strengthen your skills and aim for Band 6.5-7.0",
-                    created_at=datetime.utcnow()
-                ),
-                Track(
-                    id=str(uuid.uuid4()),
-                    name="Advanced",
-                    duration_weeks=4,
-                    daily_minutes=60,
-                    tasks_per_day=5,
-                    focus="Master advanced techniques for Band 7.5+",
-                    description="Master advanced techniques for high scorers.",
-                    created_at=datetime.utcnow()
-                ),
-            ]
-            
-            for track in tracks:
-                session.add(track)
-            
-            # Create tasks for each track
-            task_templates = [
-                {"type": "reading", "title": "Academic Reading Practice", "difficulty": "medium", "duration": 60},
-                {"type": "writing", "title": "Task 2 Essay Writing", "difficulty": "medium", "duration": 40},
-                {"type": "listening", "title": "Section 1-4 Practice", "difficulty": "easy", "duration": 30},
-                {"type": "speaking", "title": "Part 2 Cue Card Practice", "difficulty": "hard", "duration": 15},
-            ]
-            
-            for track in tracks:
-                for i, template in enumerate(task_templates):
-                    task = Task(
-                        id=str(uuid.uuid4()),
-                        track_id=track.id,
-                        type=template["type"],
-                        title=template["title"],
-                        description=f"Practice {template['type']} skills with guided exercises",
-                        difficulty=template["difficulty"],
-                        estimated_minutes=template["duration"],
-                        order_in_track=i + 1,
-                        created_at=datetime.utcnow()
-                    )
-                    session.add(task)
-            
-            # Create demo competition
-            competition = Competition(
-                id=str(uuid.uuid4()),
-                type="L-AIMS",
-                name="Weekly L-AIMS Challenge",
-                start_date=date.today(),
-                end_date=date.today() + timedelta(days=7),
-                status="active",
-                created_at=datetime.utcnow()
-            )
-            session.add(competition)
-            
-            await session.commit()
-            
-            return {"message": "Database seeded successfully", "tracks": len(tracks), "tasks": len(tracks) * len(task_templates)}
+        from momentum_engine.utils.full_seeder import run_full_seed
+        result = await run_full_seed(reset=reset)
+        return {"message": "Database seeded successfully", "stats": result}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"error": str(e)}
 
 
