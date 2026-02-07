@@ -132,93 +132,97 @@ async def root():
 async def seed_database():
     """Seed database with demo data."""
     from momentum_engine.database.connection import async_session_maker
-    from momentum_engine.database.models import Track, Task, User, Competition
+    from momentum_engine.database.models import Track, Task, Competition
+    from sqlalchemy import select, func
     from datetime import datetime, timedelta
     import uuid
     
-    async with async_session_maker() as session:
-        # Check if already seeded
-        result = await session.execute(
-            "SELECT COUNT(*) FROM tracks"
-        )
-        count = result.scalar()
-        if count > 0:
-            return {"message": "Database already seeded", "tracks": count}
-        
-        # Create demo tracks
-        tracks = [
-            Track(
-                id=str(uuid.uuid4()),
-                track_type="beginner",
-                name="IELTS Beginner Track",
-                description="Perfect for first-time test takers. Build your foundation.",
-                target_band=6.0,
-                duration_weeks=8,
-                created_at=datetime.utcnow()
-            ),
-            Track(
-                id=str(uuid.uuid4()),
-                track_type="intermediate",
-                name="IELTS Intermediate Track",
-                description="Strengthen your skills and aim for Band 6.5-7.0",
-                target_band=7.0,
-                duration_weeks=6,
-                created_at=datetime.utcnow()
-            ),
-            Track(
-                id=str(uuid.uuid4()),
-                track_type="advanced",
-                name="IELTS Advanced Track",
-                description="Master advanced techniques for Band 7.5+",
-                target_band=8.0,
-                duration_weeks=4,
-                created_at=datetime.utcnow()
-            ),
-        ]
-        
-        for track in tracks:
-            session.add(track)
-        
-        # Create tasks for each track
-        task_templates = [
-            {"skill": "reading", "title": "Academic Reading Practice", "duration_minutes": 60},
-            {"skill": "writing", "title": "Task 2 Essay Writing", "duration_minutes": 40},
-            {"skill": "listening", "title": "Section 1-4 Practice", "duration_minutes": 30},
-            {"skill": "speaking", "title": "Part 2 Cue Card Practice", "duration_minutes": 15},
-            {"skill": "vocabulary", "title": "Academic Word List", "duration_minutes": 20},
-            {"skill": "grammar", "title": "Error Correction Drill", "duration_minutes": 25},
-        ]
-        
-        for track in tracks:
-            for i, template in enumerate(task_templates):
-                task = Task(
+    try:
+        async with async_session_maker() as session:
+            # Check if already seeded
+            result = await session.execute(
+                select(func.count()).select_from(Track)
+            )
+            count = result.scalar()
+            if count and count > 0:
+                return {"message": "Database already seeded", "tracks": count}
+            
+            # Create demo tracks
+            tracks = [
+                Track(
                     id=str(uuid.uuid4()),
-                    track_id=track.id,
-                    skill=template["skill"],
-                    title=template["title"],
-                    description=f"Practice {template['skill']} skills with guided exercises",
-                    difficulty=track.track_type,
-                    estimated_minutes=template["duration_minutes"],
-                    order_index=i,
+                    track_type="beginner",
+                    name="IELTS Beginner Track",
+                    description="Perfect for first-time test takers. Build your foundation.",
+                    target_band=6.0,
+                    duration_weeks=8,
                     created_at=datetime.utcnow()
-                )
-                session.add(task)
-        
-        # Create demo competition
-        competition = Competition(
-            id=str(uuid.uuid4()),
-            name="Weekly L-AIMS Challenge",
-            description="Compete with other learners in mock tests",
-            start_date=datetime.utcnow(),
-            end_date=datetime.utcnow() + timedelta(days=7),
-            is_active=True,
-            created_at=datetime.utcnow()
-        )
-        session.add(competition)
-        
-        await session.commit()
-        
-        return {"message": "Database seeded successfully", "tracks": len(tracks), "tasks": len(tracks) * len(task_templates)}
+                ),
+                Track(
+                    id=str(uuid.uuid4()),
+                    track_type="intermediate",
+                    name="IELTS Intermediate Track",
+                    description="Strengthen your skills and aim for Band 6.5-7.0",
+                    target_band=7.0,
+                    duration_weeks=6,
+                    created_at=datetime.utcnow()
+                ),
+                Track(
+                    id=str(uuid.uuid4()),
+                    track_type="advanced",
+                    name="IELTS Advanced Track",
+                    description="Master advanced techniques for Band 7.5+",
+                    target_band=8.0,
+                    duration_weeks=4,
+                    created_at=datetime.utcnow()
+                ),
+            ]
+            
+            for track in tracks:
+                session.add(track)
+            
+            # Create tasks for each track
+            task_templates = [
+                {"skill": "reading", "title": "Academic Reading Practice", "duration_minutes": 60},
+                {"skill": "writing", "title": "Task 2 Essay Writing", "duration_minutes": 40},
+                {"skill": "listening", "title": "Section 1-4 Practice", "duration_minutes": 30},
+                {"skill": "speaking", "title": "Part 2 Cue Card Practice", "duration_minutes": 15},
+                {"skill": "vocabulary", "title": "Academic Word List", "duration_minutes": 20},
+                {"skill": "grammar", "title": "Error Correction Drill", "duration_minutes": 25},
+            ]
+            
+            for track in tracks:
+                for i, template in enumerate(task_templates):
+                    task = Task(
+                        id=str(uuid.uuid4()),
+                        track_id=track.id,
+                        skill=template["skill"],
+                        title=template["title"],
+                        description=f"Practice {template['skill']} skills with guided exercises",
+                        difficulty=track.track_type,
+                        estimated_minutes=template["duration_minutes"],
+                        order_index=i,
+                        created_at=datetime.utcnow()
+                    )
+                    session.add(task)
+            
+            # Create demo competition
+            competition = Competition(
+                id=str(uuid.uuid4()),
+                name="Weekly L-AIMS Challenge",
+                description="Compete with other learners in mock tests",
+                start_date=datetime.utcnow(),
+                end_date=datetime.utcnow() + timedelta(days=7),
+                is_active=True,
+                created_at=datetime.utcnow()
+            )
+            session.add(competition)
+            
+            await session.commit()
+            
+            return {"message": "Database seeded successfully", "tracks": len(tracks), "tasks": len(tracks) * len(task_templates)}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 # Register module routers
