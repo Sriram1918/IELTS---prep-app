@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     app_name: str = "momentum-engine"
     app_env: str = "development"
     debug: bool = False
-    secret_key: str = Field(..., min_length=32)
+    secret_key: str = Field(default="default-dev-secret-key-2024-placeholder")
     api_version: str = "v1"
     
     # PostgreSQL
@@ -71,7 +71,13 @@ class Settings(BaseSettings):
     def async_database_url(self) -> str:
         """Get async database URL for SQLAlchemy."""
         if self.database_url:
-            return self.database_url
+            # Convert postgresql:// to postgresql+asyncpg:// for Railway
+            url = self.database_url
+            if url.startswith("postgresql://"):
+                url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            elif url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+            return url
         return (
             f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"

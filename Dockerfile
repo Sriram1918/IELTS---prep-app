@@ -17,8 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Expose port
-EXPOSE 8000
+# Railway uses PORT env variable
+ENV PORT=8000
+EXPOSE $PORT
 
-# Default command
-CMD ["uvicorn", "momentum_engine.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use shell form to expand PORT variable
+CMD uvicorn momentum_engine.main:app --host 0.0.0.0 --port $PORT
