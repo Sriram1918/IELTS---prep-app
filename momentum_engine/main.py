@@ -228,17 +228,63 @@ async def seed_database(reset: bool = False):
                     description="For general test with < 21 days remaining",
                     created_at=datetime.utcnow()
                 ),
+                Track(
+                    id=str(uuid.uuid4()),
+                    name="weekend_warrior",
+                    duration_weeks=10,
+                    daily_minutes=15,
+                    tasks_per_day=1,
+                    focus="Weekend-focused learning for busy professionals",
+                    description="For learners with < 20 min daily but weekend availability",
+                    created_at=datetime.utcnow()
+                ),
+                Track(
+                    id=str(uuid.uuid4()),
+                    name="writing_focus",
+                    duration_weeks=6,
+                    daily_minutes=50,
+                    tasks_per_day=3,
+                    focus="Writing-intensive track",
+                    description="For learners with weakness in writing module",
+                    created_at=datetime.utcnow()
+                ),
+                Track(
+                    id=str(uuid.uuid4()),
+                    name="speaking_focus",
+                    duration_weeks=6,
+                    daily_minutes=50,
+                    tasks_per_day=3,
+                    focus="Speaking-intensive track",
+                    description="For learners with weakness in speaking module",
+                    created_at=datetime.utcnow()
+                ),
             ]
             
             for track in tracks:
                 session.add(track)
             
-            # Create tasks for each track
+            # Create tasks for each track - 20 tasks per track = 200 total
             task_templates = [
-                {"type": "reading", "title": "Academic Reading Practice", "difficulty": "medium", "duration": 60},
-                {"type": "writing", "title": "Task 2 Essay Writing", "difficulty": "medium", "duration": 40},
-                {"type": "listening", "title": "Section 1-4 Practice", "difficulty": "easy", "duration": 30},
-                {"type": "speaking", "title": "Part 2 Cue Card Practice", "difficulty": "hard", "duration": 15},
+                {"type": "reading", "title": "Academic Reading - Passage Analysis", "difficulty": "easy", "duration": 20},
+                {"type": "reading", "title": "Academic Reading - True/False/Not Given", "difficulty": "medium", "duration": 25},
+                {"type": "reading", "title": "Academic Reading - Matching Headings", "difficulty": "medium", "duration": 30},
+                {"type": "reading", "title": "Academic Reading - Summary Completion", "difficulty": "hard", "duration": 35},
+                {"type": "reading", "title": "Academic Reading - Full Test Practice", "difficulty": "hard", "duration": 60},
+                {"type": "writing", "title": "Task 1 - Graph Description", "difficulty": "medium", "duration": 20},
+                {"type": "writing", "title": "Task 1 - Process Diagram", "difficulty": "hard", "duration": 25},
+                {"type": "writing", "title": "Task 2 - Opinion Essay", "difficulty": "medium", "duration": 40},
+                {"type": "writing", "title": "Task 2 - Discussion Essay", "difficulty": "hard", "duration": 45},
+                {"type": "writing", "title": "Grammar Correction Drill", "difficulty": "easy", "duration": 15},
+                {"type": "listening", "title": "Section 1 - Social Conversation", "difficulty": "easy", "duration": 10},
+                {"type": "listening", "title": "Section 2 - Monologue", "difficulty": "easy", "duration": 12},
+                {"type": "listening", "title": "Section 3 - Academic Discussion", "difficulty": "medium", "duration": 15},
+                {"type": "listening", "title": "Section 4 - Academic Lecture", "difficulty": "hard", "duration": 15},
+                {"type": "listening", "title": "Listening - Full Test Practice", "difficulty": "hard", "duration": 40},
+                {"type": "speaking", "title": "Part 1 - Introduction Questions", "difficulty": "easy", "duration": 10},
+                {"type": "speaking", "title": "Part 2 - Cue Card Practice", "difficulty": "medium", "duration": 15},
+                {"type": "speaking", "title": "Part 3 - Discussion Topics", "difficulty": "hard", "duration": 15},
+                {"type": "speaking", "title": "Pronunciation Practice", "difficulty": "easy", "duration": 10},
+                {"type": "speaking", "title": "Fluency Drill - Filler Words", "difficulty": "medium", "duration": 12},
             ]
             
             for track in tracks:
