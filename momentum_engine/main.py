@@ -130,14 +130,148 @@ async def root():
 
 @app.post("/api/seed", tags=["Admin"])
 async def seed_database(reset: bool = False):
-    """Seed database with FULL demo data (tracks, users, cohorts)."""
+    """Seed database with demo data. Use ?reset=true to reseed."""
+    from momentum_engine.database.connection import async_session_maker
+    from momentum_engine.database.models import Track, Task, Competition
+    from sqlalchemy import select, func, delete
+    from datetime import datetime, timedelta, date
+    import uuid
+    
     try:
-        from momentum_engine.utils.full_seeder import run_full_seed
-        result = await run_full_seed(reset=reset)
-        return {"message": "Database seeded successfully", "stats": result}
+        async with async_session_maker() as session:
+            # Check if already seeded
+            result = await session.execute(
+                select(func.count()).select_from(Track)
+            )
+            count = result.scalar()
+            
+            # If reset is True, delete existing data
+            if reset and count and count > 0:
+                await session.execute(delete(Task))
+                await session.execute(delete(Competition))
+                await session.execute(delete(Track))
+                await session.commit()
+                count = 0  # Allow reseeding
+            
+            if count and count > 0:
+                return {"message": "Database already seeded", "tracks": count}
+            
+            # Create demo tracks - names must match assign_track() output
+            tracks = [
+                Track(
+                    id=str(uuid.uuid4()),
+                    name="sprint",
+                    duration_weeks=2,
+                    daily_minutes=50,
+                    tasks_per_day=3,
+                    focus="Fast-paced review for high scorers",
+                    description="For learners with diagnostic score >= 6.5",
+                    created_at=datetime.utcnow()
+                ),
+                Track(
+                    id=str(uuid.uuid4()),
+                    name="foundation",
+                    duration_weeks=12,
+                    daily_minutes=40,
+                    tasks_per_day=2,
+                    focus="Build strong fundamentals from scratch",
+                    description="For beginners with score < 5.5 or 90+ days until exam",
+                    created_at=datetime.utcnow()
+                ),
+                Track(
+                    id=str(uuid.uuid4()),
+                    name="professional_marathon",
+                    duration_weeks=8,
+                    daily_minutes=25,
+                    tasks_per_day=2,
+                    focus="Steady progress for working professionals",
+                    description="Default track for most learners with limited time",
+                    created_at=datetime.utcnow()
+                ),
+                Track(
+                    id=str(uuid.uuid4()),
+                    name="intensive",
+                    duration_weeks=4,
+                    daily_minutes=100,
+                    tasks_per_day=5,
+                    focus="Maximum practice for serious learners",
+                    description="For learners with 90+ minutes daily availability",
+                    created_at=datetime.utcnow()
+                ),
+                Track(
+                    id=str(uuid.uuid4()),
+                    name="balanced",
+                    duration_weeks=6,
+                    daily_minutes=50,
+                    tasks_per_day=3,
+                    focus="Balanced approach across all modules",
+                    description="For 45-90 days until exam with moderate availability",
+                    created_at=datetime.utcnow()
+                ),
+                Track(
+                    id=str(uuid.uuid4()),
+                    name="academic_fast_track",
+                    duration_weeks=3,
+                    daily_minutes=65,
+                    tasks_per_day=4,
+                    focus="Academic IELTS crash course",
+                    description="For academic test with < 21 days remaining",
+                    created_at=datetime.utcnow()
+                ),
+                Track(
+                    id=str(uuid.uuid4()),
+                    name="general_fast_track",
+                    duration_weeks=3,
+                    daily_minutes=65,
+                    tasks_per_day=4,
+                    focus="General IELTS crash course",
+                    description="For general test with < 21 days remaining",
+                    created_at=datetime.utcnow()
+                ),
+            ]
+            
+            for track in tracks:
+                session.add(track)
+            
+            # Create tasks for each track
+            task_templates = [
+                {"type": "reading", "title": "Academic Reading Practice", "difficulty": "medium", "duration": 60},
+                {"type": "writing", "title": "Task 2 Essay Writing", "difficulty": "medium", "duration": 40},
+                {"type": "listening", "title": "Section 1-4 Practice", "difficulty": "easy", "duration": 30},
+                {"type": "speaking", "title": "Part 2 Cue Card Practice", "difficulty": "hard", "duration": 15},
+            ]
+            
+            for track in tracks:
+                for i, template in enumerate(task_templates):
+                    task = Task(
+                        id=str(uuid.uuid4()),
+                        track_id=track.id,
+                        type=template["type"],
+                        title=template["title"],
+                        description=f"Practice {template['type']} skills with guided exercises",
+                        difficulty=template["difficulty"],
+                        estimated_minutes=template["duration"],
+                        order_in_track=i + 1,
+                        created_at=datetime.utcnow()
+                    )
+                    session.add(task)
+            
+            # Create demo competition
+            competition = Competition(
+                id=str(uuid.uuid4()),
+                type="L-AIMS",
+                name="Weekly L-AIMS Challenge",
+                start_date=date.today(),
+                end_date=date.today() + timedelta(days=7),
+                status="active",
+                created_at=datetime.utcnow()
+            )
+            session.add(competition)
+            
+            await session.commit()
+            
+            return {"message": "Database seeded successfully", "tracks": len(tracks), "tasks": len(tracks) * len(task_templates)}
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return {"error": str(e)}
 
 
