@@ -78,12 +78,6 @@ export default function LandingNavbar() {
 
   return (
     <nav className="landing-navbar">
-      {/* Top Banner */}
-      <div className="navbar-banner">
-        <span>🎯 New: AI-Powered Band Score Prediction is here! </span>
-        <a href="#" onClick={() => navigate('/onboarding')}>Try it free →</a>
-      </div>
-
       {/* Main Navbar */}
       <div className="navbar-main">
         <div className="container navbar-container">
