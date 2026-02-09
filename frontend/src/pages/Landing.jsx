@@ -94,18 +94,12 @@ export default function Landing() {
             <div className="hero-actions">
               <button 
                 className="btn btn-primary btn-lg"
-                onClick={() => navigate('/onboarding')}
-              >
-                Start Free Assessment
-                <ChevronRight size={20} />
-              </button>
-              <button 
-                className="btn btn-secondary btn-lg demo-btn"
                 onClick={handleDemoLogin}
                 disabled={demoLoading}
               >
                 <Play size={18} />
                 {demoLoading ? 'Loading...' : 'Try Live Demo'}
+                <ChevronRight size={20} />
               </button>
             </div>
             <div className="hero-stats">
